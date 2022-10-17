@@ -42,7 +42,7 @@ const tagLine = (text = '#FREELANCE', size = IMAGE_DIMENSION) => {
   const radius = (size / 2) * 0.95;
   const startX = size / 2 - radius;
   const pathData = 'M' + startX + ',' + size / 2 + ' ' + 'a' + radius + ',' + radius + ' 0 0 0 ' + 2 * radius + ',0';
-  console.log({ pathData });
+
   return Buffer.from(`
     <svg width="${size}px" height="${size}px" viewBox="0 0 ${size} ${size}" xmlns:xlink="http://www.w3.org/1999/xlink">
       <style>
@@ -131,11 +131,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             top: 0,
             left: 0,
           },
-          {
-            input: tagLine(fields.tagLine, resultImageSize),
-            top: 0,
-            left: 0,
-          },
+          // {
+          //   input: tagLine(fields.tagLine, resultImageSize),
+          //   top: 0,
+          //   left: 0,
+          // },
         ])
         .png()
         .toBuffer((toBufferError, data, _info) => {
