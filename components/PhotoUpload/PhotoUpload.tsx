@@ -4,17 +4,18 @@ import type { ChangeEvent } from 'react';
 import NextImage from 'next/image';
 
 import styles from './PhotoUpload.module.css';
-import textSvg from './text.svg';
+import loading from './loading.svg';
 
 const defaultColour = '#015FDB';
 const defaultTagLine = '#FREELANCE';
 
 export function PhotoUpload() {
-  const [file, setFile] = useState<Blob>();
-  const [size, setSize] = useState<number>();
-  const [originaURL, setOriginalURL] = useState<string>();
-  const [objectURL, setObjectURL] = useState<string>();
   const [arcColour, setArcColour] = useState<string>(defaultColour);
+  const [file, setFile] = useState<Blob>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [objectURL, setObjectURL] = useState<string>();
+  const [originaURL, setOriginalURL] = useState<string>();
+  const [size, setSize] = useState<number>();
   const [tagLine, setTagLine] = useState<string>(defaultTagLine);
 
   useEffect(
@@ -47,6 +48,8 @@ export function PhotoUpload() {
     formData.append('arcColour', arcColour);
     formData.append('tagLine', tagLine);
 
+    setIsLoading(true);
+
     fetch('/api/photo', { method: 'POST', body: formData })
       .then((response) => response.blob())
       .then((blob) => {
@@ -58,10 +61,12 @@ export function PhotoUpload() {
 
           setSize(width);
           setObjectURL(src);
+          setIsLoading(false);
         };
       })
       .catch((err) => {
         console.error(err);
+        setIsLoading(false);
       });
   }
 
@@ -114,39 +119,25 @@ export function PhotoUpload() {
             <NextImage src={originaURL} alt="" width={200} height={200} />
           </div>
         )}
-        {objectURL && (
-          <div>
-            <h2>Result</h2>
-            <small>
-              <small>(Fixed to 400 by 400 pixels)</small>
-            </small>
-            <br />
-            <NextImage src={objectURL} alt="" width={size} height={size} />
-            <div>
-              <a href={objectURL} download="image.png">
-                Download
-              </a>
-            </div>
-          </div>
-        )}
-      </div>
 
-      <div>
-        <svg width="400" height="400" viewBox="0 0 400 400" xmlnsXlink="http://www.w3.org/1999/xlink">
-          <path
-            d="M10,200 a190,190 0 0 0 380,0"
-            id="curvedTextPath"
-            fill="transparent"
-            stroke="#000"
-            stroke-width="2.5"
-          />
-
-          <text width="400" fill="#00ff00">
-            <textPath startOffset="35%" xlinkHref="#curvedTextPath">
-              #FREELANCE
-            </textPath>
-          </text>
-        </svg>
+        <div>
+          {objectURL && (
+            <>
+              {isLoading && <NextImage src={loading.src} width="200" height="200" />}
+              <h2>Result</h2>
+              <small>
+                <small>(Fixed to 400 by 400 pixels)</small>
+              </small>
+              <br />
+              <NextImage src={objectURL} alt="" width={size} height={size} />
+              <div>
+                <a href={objectURL} download="image.png">
+                  Download
+                </a>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
