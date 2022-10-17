@@ -121,9 +121,9 @@ export function PhotoUpload() {
         )}
 
         <div>
+          {isLoading && <NextImage src={loading.src} width="200" height="200" />}
           {objectURL && (
             <>
-              {isLoading && <NextImage src={loading.src} width="200" height="200" />}
               <h2>Result</h2>
               <small>
                 <small>(Fixed to 400 by 400 pixels)</small>
