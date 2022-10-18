@@ -3,6 +3,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import type { File } from 'formidable';
 import sharp from 'sharp';
 import formidable from 'formidable';
+import fs from 'fs';
+import path from 'path';
 
 const IMAGE_DIMENSION = 400;
 
@@ -38,35 +40,6 @@ const arc = (bgColor = '#015FDB', size = IMAGE_DIMENSION) =>
 </svg>
 `);
 
-const tagLine = (text = '#FREELANCE', size = IMAGE_DIMENSION) => {
-  const radius = (size / 2) * 0.95;
-  const startX = size / 2 - radius;
-  const pathData = 'M' + startX + ',' + size / 2 + ' ' + 'a' + radius + ',' + radius + ' 0 0 0 ' + 2 * radius + ',0';
-
-  return Buffer.from(`
-    <svg width="${size}px" height="${size}px" viewBox="0 0 ${size} ${size}" xmlns:xlink="http://www.w3.org/1999/xlink">
-      <style>
-        text {
-          /* font-family: Arial Black, Arial Bold, Gadget, sans-serif; */
-          alignment-baseline: baseline;
-          font-family: Tahoma, Verdana, Segoe, sans-serif;
-          font-size: 12px;
-          font-weight: bold;
-          text-anchor: middle;
-          width: 100%;
-        }
-      </style>
-
-      <path d="${pathData}" id="curvedTextPath" fill="transparent" stroke="#ffffff" stroke-width="2.5" />
-
-      <text width="${size}px" fill="#ffffff">
-      ${text}
-        <textPath startOffset="35%" xlink:href="#curvedTextPath">${text}</textPath>
-      </text>
-    </svg>
-  `);
-};
-
 type Fields = {
   tagLine?: string;
   arcColour?: string;
@@ -101,13 +74,13 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return;
     }
 
-    if (!files.photo) {
+    if (!files.photo?.filepath) {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
       res.end('File needs to be uploaded');
       return;
     }
 
-    const { width = 0, height = 0 } = await sharp(files.photo.filepath).metadata();
+    const { width = 0, height = 0, ...rest } = await sharp(files.photo.filepath).metadata();
 
     if (width < IMAGE_DIMENSION || height < IMAGE_DIMENSION) {
       res.writeHead(400).end(`Image dimensions should be at least ${IMAGE_DIMENSION} pixels wide and high`);
@@ -115,40 +88,46 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     const resultImageSize = fields.size || IMAGE_DIMENSION;
-    // console.log({ format, width, height });
 
-    return (
-      sharp(files.photo.filepath)
-        .resize({ width: resultImageSize })
-        // .extract({ width: 500, height: 330, left: 120, top: 70 })
-        .composite([
-          {
-            input: roundedCorners(resultImageSize),
-            blend: 'dest-in',
-          },
-          {
-            input: arc(fields.arcColour, resultImageSize),
-            top: 0,
-            left: 0,
-          },
-          // {
-          //   input: tagLine(fields.tagLine, resultImageSize),
-          //   top: 0,
-          //   left: 0,
-          // },
-        ])
-        .png()
-        .toBuffer((toBufferError, data, _info) => {
-          if (toBufferError) {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end(String(toBufferError));
+    return sharp(files.photo.filepath)
+      .resize({ width: resultImageSize })
+      .composite([
+        {
+          input: roundedCorners(resultImageSize),
+          blend: 'dest-in',
+        },
+        {
+          input: arc(fields.arcColour, resultImageSize),
+          top: 0,
+          left: 0,
+        },
+      ])
+      .png()
+      .toBuffer((toBufferError, data, _info) => {
+        if (toBufferError) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end(String(toBufferError));
 
-            return;
+          return;
+        }
+
+        try {
+          if (files.photo?.filepath) {
+            const stat = fs.lstatSync(files.photo?.filepath);
+
+            if (stat.isFile()) {
+              fs.unlinkSync(files.photo.filepath);
+            }
           }
+        } catch (statError) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end(String(statError));
+          return;
+        }
 
-          res.status(200).send(data);
-        })
-    );
+        res.status(200).send(data);
+        return;
+      });
   });
 }
 
