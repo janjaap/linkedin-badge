@@ -11,38 +11,37 @@ const IMAGE_DIMENSION = 400;
 const roundedCorners = (size = IMAGE_DIMENSION) =>
   Buffer.from(`<svg><rect x="0" y="0" width="${size}" height="${size}" rx="${size / 2}" ry="${size} / 2" /></svg>`);
 
-const arc = (bgColor = '#015FDB', size = IMAGE_DIMENSION) =>
+const arc = (size = IMAGE_DIMENSION) =>
   Buffer.from(`
-<svg width="${size}" height="${size}" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g clip-path="url(#clip0_1_4)">
-    <g clip-path="url(#clip1_1_4)">
-      <path d="M98.86 229C54.66 291.61 24.29 362.91 9.76998 438.16C-4.75002 513.41 -3.08002 590.89 14.67 665.45C32.41 740.01 65.82 809.93 112.68 870.58C159.53 931.23 218.76 981.21 286.42 1017.2C354.08 1053.19 428.63 1074.36 505.11 1079.31C581.59 1084.26 658.24 1072.88 729.98 1045.92C801.72 1018.95 866.9 977.03 921.18 922.93C975.46 868.83 1017.61 803.8 1044.82 732.15L883.38 670.84C864.87 719.57 836.21 763.81 799.28 800.61C762.36 837.41 718.02 865.92 669.22 884.26C620.42 902.6 568.28 910.34 516.26 906.97C464.24 903.6 413.53 889.2 367.51 864.72C321.49 840.24 281.2 806.24 249.33 764.99C217.46 723.74 194.74 676.17 182.67 625.46C170.6 574.75 169.47 522.05 179.34 470.86C189.21 419.67 209.87 371.18 239.93 328.59L98.86 229Z" fill="url(#paint0_linear_1_4)"/>
-     </g>
-  </g>
-  <defs>
-    <linearGradient id="paint0_linear_1_4" x1="568.3" y1="494.14" x2="241.8" y2="1028.18" gradientUnits="userSpaceOnUse">
-      <stop offset="0.09" stop-color="${bgColor}" stop-opacity="0" />
-      <stop offset="0.13" stop-color="${bgColor}" stop-opacity="0.04" />
-      <stop offset="0.2" stop-color="${bgColor}" stop-opacity="0.14" />
-      <stop offset="0.27" stop-color="${bgColor}" stop-opacity="0.3" />
-      <stop offset="0.29" stop-color="${bgColor}" stop-opacity="0.35" />
-      <stop offset="0.42" stop-color="${bgColor}" stop-opacity="0.67" />
-      <stop offset="0.53" stop-color="${bgColor}" stop-opacity="0.91" />
-      <stop offset="0.58" stop-color="${bgColor}" />
-    </linearGradient>
-    <clipPath id="clip0_1_4">
-     <rect width="1080" height="1080" fill="white" />
-    </clipPath>
-    <clipPath id="clip1_1_4">
-      <rect width="1044.82" height="851.43" fill="white" transform="translate(0 229)" />
-    </clipPath>
-  </defs>
-</svg>
+    <svg width="${size}" height="${size}" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g clip-path="url(#clip0_1_4)">
+        <g clip-path="url(#clip1_1_4)">
+          <path d="M98.86 229C54.66 291.61 24.29 362.91 9.76998 438.16C-4.75002 513.41 -3.08002 590.89 14.67 665.45C32.41 740.01 65.82 809.93 112.68 870.58C159.53 931.23 218.76 981.21 286.42 1017.2C354.08 1053.19 428.63 1074.36 505.11 1079.31C581.59 1084.26 658.24 1072.88 729.98 1045.92C801.72 1018.95 866.9 977.03 921.18 922.93C975.46 868.83 1017.61 803.8 1044.82 732.15L883.38 670.84C864.87 719.57 836.21 763.81 799.28 800.61C762.36 837.41 718.02 865.92 669.22 884.26C620.42 902.6 568.28 910.34 516.26 906.97C464.24 903.6 413.53 889.2 367.51 864.72C321.49 840.24 281.2 806.24 249.33 764.99C217.46 723.74 194.74 676.17 182.67 625.46C170.6 574.75 169.47 522.05 179.34 470.86C189.21 419.67 209.87 371.18 239.93 328.59L98.86 229Z" fill="url(#paint0_linear_1_4)"/>
+        </g>
+      </g>
+      <defs>
+        <linearGradient id="paint0_linear_1_4" x1="568.3" y1="494.14" x2="241.8" y2="1028.18" gradientUnits="userSpaceOnUse">
+          <stop offset="0.09" stop-color="#015FDB" stop-opacity="0" />
+          <stop offset="0.13" stop-color="#015FDB" stop-opacity="0.04" />
+          <stop offset="0.2" stop-color="#015FDB" stop-opacity="0.14" />
+          <stop offset="0.27" stop-color="#015FDB" stop-opacity="0.3" />
+          <stop offset="0.29" stop-color="#015FDB" stop-opacity="0.35" />
+          <stop offset="0.42" stop-color="#015FDB" stop-opacity="0.67" />
+          <stop offset="0.53" stop-color="#015FDB" stop-opacity="0.91" />
+          <stop offset="0.58" stop-color="#015FDB" />
+        </linearGradient>
+        <clipPath id="clip0_1_4">
+        <rect width="1080" height="1080" fill="white" />
+        </clipPath>
+        <clipPath id="clip1_1_4">
+          <rect width="1044.82" height="851.43" fill="white" transform="translate(0 229)" />
+        </clipPath>
+      </defs>
+    </svg>
 `);
 
 type Fields = {
   tagLine?: string;
-  arcColour?: string;
   size?: number;
 };
 
@@ -97,7 +96,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           blend: 'dest-in',
         },
         {
-          input: arc(fields.arcColour, resultImageSize),
+          input: arc(resultImageSize),
           top: 0,
           left: 0,
         },

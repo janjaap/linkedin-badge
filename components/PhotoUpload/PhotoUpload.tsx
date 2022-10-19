@@ -1,25 +1,26 @@
 import { FormEvent, useEffect, useState } from 'react';
+import NextImage from 'next/image';
+import classNames from 'clsx';
 
 import type { ChangeEvent } from 'react';
-import NextImage from 'next/image';
 
 import styles from './PhotoUpload.module.css';
-import loading from './loading.svg';
 import { Canvas } from '../Canvas/Canvas';
-import { arc } from './arc';
+import { textOnCurve } from './textOnCurve';
+import { Spinner } from '../Spinner/Spinner';
+import { fileSize } from '../Canvas/fileSize';
 
-const defaultColour = '#015FDB';
-const defaultTagLine = '#FREELANCE';
+const defaultTagLine = 'FREELANCE';
 
 export function PhotoUpload() {
-  const [arcColour, setArcColour] = useState<string>(defaultColour);
   const [file, setFile] = useState<Blob>();
+  const [fileError, setFileError] = useState('');
+  const [imgLayers, setImgLayers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [objectURL, setObjectURL] = useState<string>();
   const [originaURL, setOriginalURL] = useState<string>();
-  const [size, setSize] = useState<number>();
   const [tagLine, setTagLine] = useState<string>(defaultTagLine);
-  const [imgLayers, setImgLayers] = useState<string[]>([]);
+  const [tagLineError, setTagLineError] = useState('');
 
   useEffect(
     () => () => {
@@ -30,26 +31,44 @@ export function PhotoUpload() {
     [objectURL]
   );
 
-  function onChange(event: ChangeEvent<HTMLInputElement>) {
+  function onChangeFile(event: ChangeEvent<HTMLInputElement>) {
     if (!event.target.files) return;
 
-    const photo = event.target.files.item(0);
+    const file = event.target.files.item(0);
 
-    if (!photo) return;
+    setFileError('');
 
-    setFile(photo);
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      setFileError(`This file is too big: ${fileSize(file.size)}`);
+      return;
+    }
+
+    setFile(file);
     setObjectURL(undefined);
-    setOriginalURL(URL.createObjectURL(photo));
+    setOriginalURL(URL.createObjectURL(file));
+  }
+
+  function onChangeTagLine(event: ChangeEvent<HTMLInputElement>) {
+    const { value, validity } = event.target;
+
+    setTagLineError('');
+
+    if (!validity.valid) {
+      setTagLineError('Only use alphanumeric characters (A-Z, 0-9) for your hashtag.');
+    }
+
+    setTagLine(value);
   }
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (!file) return;
+    if (!file || fileError || tagLineError) return;
 
     const formData = new FormData();
     formData.append('photo', file);
-    formData.append('arcColour', arcColour);
 
     setIsLoading(true);
     setObjectURL(undefined);
@@ -61,7 +80,7 @@ export function PhotoUpload() {
 
         setObjectURL(resultSrc);
         setIsLoading(false);
-        setImgLayers([resultSrc, arc(400, tagLine)]);
+        setImgLayers([resultSrc, textOnCurve(400, tagLine)]);
       })
       .catch((err) => {
         console.error(err);
@@ -73,38 +92,63 @@ export function PhotoUpload() {
     <div className={styles['photo-upload']}>
       <h1>Linkedin profile badge generator</h1>
 
-      <form action="" className={styles['photo-upload-form']} onSubmit={onSubmit}>
-        <fieldset className={styles['photo-upload-form__fieldset']}>
-          <label htmlFor="photo">Select a photo</label>
-          <input id="photo" type="file" onChange={onChange} />
-        </fieldset>
+      <form action="" className={styles['photo-upload-form']} onSubmit={onSubmit} noValidate>
+        <fieldset
+          className={classNames(styles['photo-upload-form__fieldset'], {
+            [styles['photo-upload-form__fieldset--error']]: fileError,
+          })}
+        >
+          <div className={styles['photo-upload-form-label']}>
+            <label htmlFor="photo">Select a photo</label>
 
-        <fieldset className={styles['photo-upload-form__fieldset']}>
-          <label htmlFor="tagline">Fill in a tagline</label>
+            <p className={styles['photo-upload-form__input-info']}>Maximum allowed size is 8 MB</p>
+
+            {fileError && (
+              <span id="ID_FILE_ERROR" className={styles['photo-upload-form__input-error']}>
+                {fileError}
+              </span>
+            )}
+          </div>
+
           <input
-            type="text"
-            id="tagline"
-            value={tagLine}
-            onChange={(event) => {
-              setTagLine(event.target.value);
-            }}
+            id="photo"
+            type="file"
+            onChange={onChangeFile}
+            aria-describedby={fileError ? 'ID_FILE_ERROR' : undefined}
           />
         </fieldset>
 
-        <fieldset className={styles['photo-upload-form__fieldset']}>
-          <label htmlFor="rounded">Select the background colour</label>
-          <input
-            id="arcColor"
-            type="color"
-            name="rounded"
-            onChange={(event) => {
-              setArcColour(event.target.value);
-            }}
-            value={arcColour}
-          />
+        <fieldset
+          className={classNames(styles['photo-upload-form__fieldset'], {
+            [styles['photo-upload-form__fieldset--error']]: tagLineError,
+          })}
+        >
+          <div className={styles['photo-upload-form-label']}>
+            <label htmlFor="tagline">Fill in a tagline</label>
+
+            <p className={styles['photo-upload-form__input-info']}>
+              Should be a hashtag; no spaces or lowercase characters allowed
+            </p>
+
+            {tagLineError && (
+              <span id="ID_TAGLINE_ERROR" className={styles['photo-upload-form__input-error']}>
+                {tagLineError}
+              </span>
+            )}
+          </div>
+
+          <div className={styles['photo-upload-form-input']}>
+            <span className={styles['photo-upload-form__input-prefix']}>#</span>
+            <input id="tagline" onChange={onChangeTagLine} pattern="[A-Za-z0-9]+" type="text" value={tagLine} />
+          </div>
         </fieldset>
 
-        <button type="submit">Upload and convert photo</button>
+        <fieldset className={styles['photo-upload-form__fieldset']}>
+          <div className={styles['photo-upload-form-label']} />
+          <div className={styles['photo-upload-form-input']}>
+            <button type="submit">Upload and convert photo</button>
+          </div>
+        </fieldset>
       </form>
 
       <div className={styles['photo-upload-form-result']}>
@@ -116,7 +160,8 @@ export function PhotoUpload() {
                 <small>(Downsized to 200 by 200 pixels)</small>
               </small>
               <br />
-              <NextImage src={originaURL} alt="" width={200} height={200} />
+
+              <NextImage src={originaURL} alt="Original image" width={200} height={200} />
             </>
           ) : (
             <>Select a photo for uploading</>
@@ -125,17 +170,18 @@ export function PhotoUpload() {
 
         <div>
           <h2>Result</h2>
-          {isLoading && <NextImage src={loading.src} width="200" height="200" />}
-          {objectURL ? (
+
+          {isLoading && <Spinner ariaValueText="Loading result" />}
+
+          {objectURL && (
             <>
               <small>
                 <small>(Fixed to 400 by 400 pixels)</small>
               </small>
 
               <Canvas layers={imgLayers} />
+              <span />
             </>
-          ) : (
-            <>...</>
           )}
         </div>
       </div>
