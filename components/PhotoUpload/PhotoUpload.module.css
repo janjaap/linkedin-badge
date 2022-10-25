@@ -1,5 +1,4 @@
 .photo-upload {
-  /* left blank */
   display: block;
 }
 
@@ -12,7 +11,7 @@
 }
 
 .photo-upload-form button {
-  width: max-content
+  width: max-content;
 }
 
 .photo-upload-form__fieldset {
@@ -33,9 +32,28 @@
 
 .photo-upload-form-result {
   display: grid;
-  gap: 1rem;
+  gap: 4rem;
   justify-content: space-between;
-  grid-template-columns: 4fr 8fr;
+  align-items: center;
+  grid-template-columns: 10fr 1fr 10fr;
+  grid-auto-rows: 1fr;
+}
+
+.photo-upload-form-result fieldset {
+  height: 100%;
+  max-height: 28rem;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.photo-upload-form-result__empty {
+  align-items: center;
+  color: #ccc;
+  justify-content: center;
+  border: 2px dashed #ccc;
+  display: flex;
+  min-height: 20rem;
+  padding: 2rem;
 }
 
 .photo-upload-form__input-info {
@@ -73,6 +91,6 @@
   width: 1rem;
 }
 
-.photo-upload-form__input-prefix+input[type="text"] {
+.photo-upload-form__input-prefix + input[type="text"] {
   padding-left: 1.5rem;
 }

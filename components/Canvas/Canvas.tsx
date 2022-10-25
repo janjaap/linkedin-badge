@@ -1,4 +1,4 @@
-import { HTMLAttributes, MouseEvent, useEffect, useRef, useState } from 'react';
+import { HTMLAttributes, useEffect, useRef, useState } from 'react';
 import { fileSize } from './fileSize';
 import { getImage } from './getImage';
 

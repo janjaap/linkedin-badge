@@ -1,8 +1,11 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import NextImage from 'next/image';
 import classNames from 'clsx';
+import ReactCrop from 'react-image-crop';
 
-import type { ChangeEvent } from 'react';
+import 'react-image-crop/dist/ReactCrop.css';
+import type { ChangeEvent, FormEvent } from 'react';
+import type { Crop, PercentCrop, PixelCrop } from 'react-image-crop';
 
 import styles from './PhotoUpload.module.css';
 import { Canvas } from '../Canvas/Canvas';
@@ -11,8 +14,17 @@ import { Spinner } from '../Spinner/Spinner';
 import { fileSize } from '../Canvas/fileSize';
 
 const defaultTagLine = 'FREELANCE';
+const initialCrop: PercentCrop = {
+  unit: '%',
+  width: 75,
+  height: 75,
+  x: 12.5,
+  y: 12.5,
+};
 
 export function PhotoUpload() {
+  const [crop, setCrop] = useState<Crop>(initialCrop);
+  const [percentCrop, setPercentCrop] = useState<PercentCrop>(initialCrop);
   const [file, setFile] = useState<Blob>();
   const [fileError, setFileError] = useState('');
   const [imgLayers, setImgLayers] = useState<string[]>([]);
@@ -21,6 +33,8 @@ export function PhotoUpload() {
   const [originaURL, setOriginalURL] = useState<string>();
   const [tagLine, setTagLine] = useState<string>(defaultTagLine);
   const [tagLineError, setTagLineError] = useState('');
+
+  const [size, setSize] = useState<{ width: number; height: number }>();
 
   useEffect(
     () => () => {
@@ -48,6 +62,15 @@ export function PhotoUpload() {
     setFile(file);
     setObjectURL(undefined);
     setOriginalURL(URL.createObjectURL(file));
+
+    const newImg = document.createElement('img');
+    newImg.src = URL.createObjectURL(file);
+    newImg.onload = function onLoad() {
+      const { width, height } = newImg;
+
+      setOriginalURL(URL.createObjectURL(file));
+      setSize({ width, height });
+    };
   }
 
   function onChangeTagLine(event: ChangeEvent<HTMLInputElement>) {
@@ -69,6 +92,7 @@ export function PhotoUpload() {
 
     const formData = new FormData();
     formData.append('photo', file);
+    formData.append('crop', JSON.stringify(percentCrop));
 
     setIsLoading(true);
     setObjectURL(undefined);
@@ -88,11 +112,21 @@ export function PhotoUpload() {
       });
   }
 
+  function onCropChange(crop: PixelCrop, percentCrop: PercentCrop) {
+    setCrop(crop);
+    setPercentCrop(percentCrop);
+  }
+
+  // console.log({ crop });
+
   return (
     <div className={styles['photo-upload']}>
       <h1>Linkedin profile badge generator</h1>
 
-      <p>Render an image with rounded corners a #FREELANCE badge on a transparent background.</p>
+      <p>Render an image with rounded corners below a #FREELANCE badge on a transparent background.</p>
+      <p>
+        The Linkedin profile badge needs to be square. The image that you want to convert can be cropped once selected.
+      </p>
       <p>
         <em>
           Note: this is the first version in which you cannot set your own tagline nor the colour of the tagline
@@ -159,48 +193,39 @@ export function PhotoUpload() {
           </div>
         </fieldset>
 
-        <fieldset className={styles['photo-upload-form__fieldset']}>
-          <div className={styles['photo-upload-form-label']} />
+        <div className={styles['photo-upload-form-result']}>
+          <fieldset>
+            <legend>Original</legend>
+
+            {originaURL && size ? (
+              <>
+                <ReactCrop crop={crop} onChange={onCropChange} aspect={1} ruleOfThirds>
+                  {/*eslint-disable-next-line @next/next/no-img-element*/}
+                  <img src={originaURL} alt="Original image" />
+                </ReactCrop>
+
+                {/* <small>
+                  <small>{`width: ${size.width} pixels, height: ${size.height} pixels`}</small>
+                </small> */}
+              </>
+            ) : (
+              <div className={styles['photo-upload-form-result__empty']}>Upload photo</div>
+            )}
+          </fieldset>
+
           <div className={styles['photo-upload-form-input']}>
-            <button type="submit">Upload and convert photo</button>
+            <button type="submit">Apply badge</button>
           </div>
-        </fieldset>
+
+          <fieldset>
+            <legend>Result</legend>
+
+            {isLoading && <Spinner ariaValueText="Loading result" />}
+
+            {objectURL && <Canvas layers={imgLayers} />}
+          </fieldset>
+        </div>
       </form>
-
-      <div className={styles['photo-upload-form-result']}>
-        <div>
-          <h2>Original</h2>
-          {originaURL ? (
-            <>
-              <small>
-                <small>(Downsized to 200 by 200 pixels)</small>
-              </small>
-              <br />
-
-              <NextImage src={originaURL} alt="Original image" width={200} height={200} />
-            </>
-          ) : (
-            <>Select a photo for uploading</>
-          )}
-        </div>
-
-        <div>
-          <h2>Result</h2>
-
-          {isLoading && <Spinner ariaValueText="Loading result" />}
-
-          {objectURL && (
-            <>
-              <small>
-                <small>(Fixed to 400 by 400 pixels)</small>
-              </small>
-
-              <Canvas layers={imgLayers} />
-              <span />
-            </>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

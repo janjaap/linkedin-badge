@@ -1,11 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600&display=swap");
 
 :root {
-  --body-padding: calc(1vmin + .5rem);
+  --body-padding: calc(1vmin + 0.5rem);
 }
 
 html {
-  max-width: 80ch;
+  max-width: 120ch;
   /* larger spacing on larger screens, very small spacing on tiny screens */
   padding: var(--body-padding);
   /* shorthand for margin-left/margin-right */
@@ -32,5 +32,9 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Libre Franklin';
+  font-family: "Libre Franklin";
+}
+
+canvas {
+  width: 100%;
 }

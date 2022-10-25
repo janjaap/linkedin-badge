@@ -4,9 +4,33 @@ import type { File } from 'formidable';
 import sharp from 'sharp';
 import formidable from 'formidable';
 import fs from 'fs';
-import path from 'path';
+// import path from 'path';
+import type { Crop, PercentCrop } from 'react-image-crop';
 
 const IMAGE_DIMENSION = 400;
+const CROP: PercentCrop = { x: 0, y: 0, width: 100, height: 100, unit: '%' };
+
+const cropCfg = (crop: Crop, size: number, metaData: sharp.Metadata) => {
+  const left = Number.parseInt((((crop.x || CROP.x) / 100) * (metaData.width || size)).toFixed(), 10);
+  const top = Number.parseInt((((crop.y || CROP.y) / 100) * (metaData.height || size)).toFixed(), 10);
+  const width = Number.parseInt(((crop.width / 100) * (metaData.width || size)).toFixed(), 10);
+  const height = Number.parseInt(((crop.height / 100) * (metaData.height || size)).toFixed(), 10);
+
+  console.log({
+    cropCfg: {
+      left,
+      top,
+      width,
+      height,
+    },
+  });
+  return {
+    left,
+    top,
+    width,
+    height,
+  };
+};
 
 const roundedCorners = (size = IMAGE_DIMENSION) =>
   Buffer.from(`<svg><rect x="0" y="0" width="${size}" height="${size}" rx="${size / 2}" ry="${size} / 2" /></svg>`);
@@ -53,6 +77,7 @@ const arc = (size = IMAGE_DIMENSION) =>
 type Fields = {
   tagLine?: string;
   size?: number;
+  crop?: string;
 };
 
 type Files = {
@@ -89,16 +114,23 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return;
     }
 
-    const { width = 0, height = 0, ...rest } = await sharp(files.photo.filepath).metadata();
+    const metaData = await sharp(files.photo.filepath).metadata();
+    const { width = 0, height = 0 } = metaData;
 
     if (width < IMAGE_DIMENSION || height < IMAGE_DIMENSION) {
       res.writeHead(400).end(`Image dimensions should be at least ${IMAGE_DIMENSION} pixels wide and high`);
       return;
     }
 
+    console.log(fields);
+
     const resultImageSize = fields.size || IMAGE_DIMENSION;
+    const crop = fields.crop ? (JSON.parse(fields.crop) as PercentCrop) : CROP;
+
+    console.log({ crop, cropCfg: cropCfg(crop, resultImageSize, metaData) });
 
     return sharp(files.photo.filepath)
+      .extract(cropCfg(crop, resultImageSize, metaData))
       .resize({ width: resultImageSize })
       .composite([
         {
