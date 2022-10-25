@@ -22,8 +22,10 @@ const Home: NextPage = () => {
 
       <footer className={styles['main-footer']}>
         <h2>Disclaimer</h2>
-        Uploaded files are discarded right after they have been processed (resized, cropped, composited) and will not be
-        used for anything else than providing the user with a modified image of their choice.
+        <small>
+          Uploaded files are discarded right after they have been processed (resized, cropped, composited) and will not
+          be used for anything else than providing the user with a modified image of their choice.
+        </small>
       </footer>
 
       <div className={styles['forkme-ribbon']}>

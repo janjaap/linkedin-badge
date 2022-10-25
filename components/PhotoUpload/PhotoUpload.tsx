@@ -6,7 +6,7 @@ import type { ChangeEvent } from 'react';
 
 import styles from './PhotoUpload.module.css';
 import { Canvas } from '../Canvas/Canvas';
-import { textOnCurve } from './textOnCurve';
+// import { textOnCurve } from './textOnCurve';
 import { Spinner } from '../Spinner/Spinner';
 import { fileSize } from '../Canvas/fileSize';
 
@@ -80,7 +80,7 @@ export function PhotoUpload() {
 
         setObjectURL(resultSrc);
         setIsLoading(false);
-        setImgLayers([resultSrc, textOnCurve(400, tagLine)]);
+        setImgLayers([resultSrc]);
       })
       .catch((err) => {
         console.error(err);
@@ -91,6 +91,14 @@ export function PhotoUpload() {
   return (
     <div className={styles['photo-upload']}>
       <h1>Linkedin profile badge generator</h1>
+
+      <p>Render an image with rounded corners a #FREELANCE badge on a transparent background.</p>
+      <p>
+        <em>
+          Note: this is the first version in which you cannot set your own tagline nor the colour of the tagline
+          background.
+        </em>
+      </p>
 
       <form action="" className={styles['photo-upload-form']} onSubmit={onSubmit} noValidate>
         <fieldset
@@ -121,6 +129,7 @@ export function PhotoUpload() {
         <fieldset
           className={classNames(styles['photo-upload-form__fieldset'], {
             [styles['photo-upload-form__fieldset--error']]: tagLineError,
+            [styles['photo-upload-form__fieldset--disabled']]: true,
           })}
         >
           <div className={styles['photo-upload-form-label']}>
@@ -139,7 +148,14 @@ export function PhotoUpload() {
 
           <div className={styles['photo-upload-form-input']}>
             <span className={styles['photo-upload-form__input-prefix']}>#</span>
-            <input id="tagline" onChange={onChangeTagLine} pattern="[A-Za-z0-9]+" type="text" value={tagLine} />
+            <input
+              disabled
+              id="tagline"
+              onChange={onChangeTagLine}
+              pattern="[A-Za-z0-9]+"
+              type="text"
+              value={tagLine}
+            />
           </div>
         </fieldset>
 

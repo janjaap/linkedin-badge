@@ -8,8 +8,8 @@ interface Props extends HTMLAttributes<HTMLCanvasElement> {
 
 export function Canvas({ layers, ...restProps }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [size, setSize] = useState('');
 
+  const [size, setSize] = useState('');
   const [objectUrl, setObjectURL] = useState('');
 
   useEffect(() => {
@@ -46,8 +46,6 @@ export function Canvas({ layers, ...restProps }: Props) {
 
       canvasRef.current?.toBlob((blob) => {
         if (!blob) return;
-
-        console.log({ blob });
 
         setSize(fileSize(blob.size));
 

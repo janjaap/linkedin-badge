@@ -20,6 +20,11 @@
   padding: 0;
 }
 
+.photo-upload-form__fieldset--disabled {
+  pointer-events: none;
+  opacity: 0.25;
+}
+
 .photo-upload-form__fieldset--error {
   border-left: 3px solid #ec0000;
   margin-left: -0.875rem;
@@ -68,6 +73,6 @@
   width: 1rem;
 }
 
-.photo-upload-form__input-prefix + input[type="text"] {
+.photo-upload-form__input-prefix+input[type="text"] {
   padding-left: 1.5rem;
 }
