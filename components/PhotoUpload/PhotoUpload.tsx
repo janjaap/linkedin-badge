@@ -33,7 +33,6 @@ export function PhotoUpload() {
   const [objectURL, setObjectURL] = useState<string>();
   const [originaURL, setOriginalURL] = useState<string>();
   const [parseError, setParseError] = useState('');
-  const [percentCrop, setPercentCrop] = useState<PercentCrop>(initialCrop);
   const [tagLine, setTagLine] = useState<string>(defaultTagLine);
   const [tagLineError, setTagLineError] = useState('');
 
@@ -106,7 +105,6 @@ export function PhotoUpload() {
         height
       );
       setCrop(relCrop);
-      setPercentCrop(relCrop);
     };
   }
 
@@ -127,14 +125,14 @@ export function PhotoUpload() {
 
     if (!file || fileError || tagLineError) return;
 
-    if (!percentCrop.width || !percentCrop.height) {
+    if (!crop.width || !crop.height) {
       setParseError('Select the crop area in the photo');
       return;
     }
 
     const formData = new FormData();
     formData.append('photo', file);
-    formData.append('crop', JSON.stringify(percentCrop));
+    formData.append('crop', JSON.stringify(crop));
 
     setIsLoading(true);
     setObjectURL(undefined);
@@ -166,9 +164,8 @@ export function PhotoUpload() {
       });
   }
 
-  function onCropChange(crop: PixelCrop, percentCrop: PercentCrop) {
-    setCrop(crop);
-    setPercentCrop(percentCrop);
+  function onCropChange(_crop: PixelCrop, percentCrop: PercentCrop) {
+    setCrop(percentCrop);
   }
 
   return (
