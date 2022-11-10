@@ -43,11 +43,16 @@
   grid-auto-rows: 1fr;
 }
 
+.photo-upload-form-result_loader {
+  position: absolute;
+}
+
 .photo-upload-form-result-img-container {
   height: 100%;
   max-height: 28rem;
   margin-top: 2rem;
   padding: 1rem;
+  position: relative;
 }
 
 .photo-upload-form-result__empty {

@@ -268,7 +268,11 @@ export function PhotoUpload() {
           <div className={styles['photo-upload-form-result-img-container']}>
             <p>Result</p>
 
-            {isLoading && <Spinner ariaValueText="Loading result" />}
+            {isLoading && (
+              <div className={styles['photo-upload-form-result_loader']}>
+                <Spinner ariaValueText="Loading result" />
+              </div>
+            )}
 
             {objectURL ? (
               <Canvas layers={imgLayers} />
