@@ -16,14 +16,6 @@ const cropCfg = (crop: Crop, size: number, metaData: sharp.Metadata) => {
   const width = Number.parseInt(((crop.width / 100) * (metaData.width || size)).toFixed(), 10);
   const height = Number.parseInt(((crop.height / 100) * (metaData.height || size)).toFixed(), 10);
 
-  console.log({
-    cropCfg: {
-      left,
-      top,
-      width,
-      height,
-    },
-  });
   return {
     left,
     top,
@@ -118,18 +110,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const { width = 0, height = 0 } = metaData;
 
     if (width < IMAGE_DIMENSION || height < IMAGE_DIMENSION) {
-      res.writeHead(400).end(`Image dimensions should be at least ${IMAGE_DIMENSION} pixels wide and high`);
+      res.writeHead(422, { 'Content-Type': 'text/plain' });
+      res.write(`Image dimensions should be at least ${IMAGE_DIMENSION} pixels wide and high`);
+      res.end();
       return;
     }
-
-    console.log(fields);
 
     const resultImageSize = fields.size || IMAGE_DIMENSION;
     const crop = fields.crop ? (JSON.parse(fields.crop) as PercentCrop) : CROP;
 
-    console.log({ crop, cropCfg: cropCfg(crop, resultImageSize, metaData) });
-
-    return sharp(files.photo.filepath)
+    sharp(files.photo.filepath)
       .extract(cropCfg(crop, resultImageSize, metaData))
       .resize({ width: resultImageSize })
       .composite([

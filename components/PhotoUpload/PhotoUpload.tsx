@@ -13,6 +13,7 @@ import { Canvas } from '../Canvas/Canvas';
 import { Spinner } from '../Spinner/Spinner';
 import { fileSize } from '../Canvas/fileSize';
 
+const MIN_IMG_WIDTH = 400;
 const defaultTagLine = 'FREELANCE';
 const initialCrop: PercentCrop = {
   unit: '%',
@@ -23,14 +24,16 @@ const initialCrop: PercentCrop = {
 };
 
 export function PhotoUpload() {
+  const [applied, setApplied] = useState(false);
   const [crop, setCrop] = useState<Crop>(initialCrop);
-  const [percentCrop, setPercentCrop] = useState<PercentCrop>(initialCrop);
   const [file, setFile] = useState<Blob>();
   const [fileError, setFileError] = useState('');
   const [imgLayers, setImgLayers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [objectURL, setObjectURL] = useState<string>();
   const [originaURL, setOriginalURL] = useState<string>();
+  const [parseError, setParseError] = useState('');
+  const [percentCrop, setPercentCrop] = useState<PercentCrop>(initialCrop);
   const [tagLine, setTagLine] = useState<string>(defaultTagLine);
   const [tagLineError, setTagLineError] = useState('');
 
@@ -62,14 +65,38 @@ export function PhotoUpload() {
     setFile(file);
     setObjectURL(undefined);
     setOriginalURL(URL.createObjectURL(file));
+    setParseError('');
 
     const newImg = document.createElement('img');
     newImg.src = URL.createObjectURL(file);
     newImg.onload = function onLoad() {
       const { width, height } = newImg;
+      const ratio = width / height;
+
+      if (width < MIN_IMG_WIDTH || height < MIN_IMG_WIDTH) {
+        setFileError('The image dimensions should be at least 400 pixels by 400 pixels');
+        setOriginalURL(undefined);
+        return;
+      }
+
+      let cropWidth = 75;
+      let cropHeight = 75;
+
+      if (ratio <= 1) {
+        cropHeight = cropHeight * ratio;
+      } else {
+        cropWidth = cropWidth / ratio;
+      }
 
       setOriginalURL(URL.createObjectURL(file));
       setSize({ width, height });
+      setCrop({
+        ...initialCrop,
+        width: Math.round(cropWidth),
+        height: Math.round(cropHeight),
+        x: (100 - cropWidth) / 2,
+        y: (100 - cropHeight) / 2,
+      });
     };
   }
 
@@ -90,24 +117,41 @@ export function PhotoUpload() {
 
     if (!file || fileError || tagLineError) return;
 
+    if (!percentCrop.width || !percentCrop.height) {
+      setParseError('Select the crop area in the photo');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('photo', file);
     formData.append('crop', JSON.stringify(percentCrop));
 
     setIsLoading(true);
     setObjectURL(undefined);
+    setParseError('');
 
     fetch('/api/photo', { method: 'POST', body: formData })
-      .then((response) => response.blob())
+      .then(async (response) => {
+        if (!response.ok) {
+          if (response.status === 422) {
+            throw new Error('File dimensions should at least be 400 pixels by 400 pixels');
+          }
+
+          throw new Error('Something went horribly wrong on the server. Reload the page and try again');
+        }
+
+        return response.blob();
+      })
       .then(async (blob) => {
         const resultSrc = URL.createObjectURL(blob);
 
         setObjectURL(resultSrc);
         setIsLoading(false);
         setImgLayers([resultSrc]);
+        setApplied(true);
       })
-      .catch((err) => {
-        console.error(err);
+      .catch((error: Error) => {
+        setParseError(error.message);
         setIsLoading(false);
       });
   }
@@ -116,8 +160,6 @@ export function PhotoUpload() {
     setCrop(crop);
     setPercentCrop(percentCrop);
   }
-
-  // console.log({ crop });
 
   return (
     <div className={styles['photo-upload']}>
@@ -193,9 +235,11 @@ export function PhotoUpload() {
           </div>
         </fieldset>
 
+        {parseError && <div className={styles['photo-upload-parse-error']}>{parseError}</div>}
+
         <div className={styles['photo-upload-form-result']}>
-          <fieldset>
-            <legend>Original</legend>
+          <div className={styles['photo-upload-form-result-img-container']}>
+            <p>Original</p>
 
             {originaURL && size ? (
               <>
@@ -204,26 +248,34 @@ export function PhotoUpload() {
                   <img src={originaURL} alt="Original image" />
                 </ReactCrop>
 
-                {/* <small>
-                  <small>{`width: ${size.width} pixels, height: ${size.height} pixels`}</small>
-                </small> */}
+                <div>
+                  <small>
+                    <small>The image can be cropped by dragging the grid handles</small>
+                  </small>
+                </div>
               </>
             ) : (
               <div className={styles['photo-upload-form-result__empty']}>Upload photo</div>
             )}
-          </fieldset>
-
-          <div className={styles['photo-upload-form-input']}>
-            <button type="submit">Apply badge</button>
           </div>
 
-          <fieldset>
-            <legend>Result</legend>
+          <div className={styles['photo-upload-form-input']}>
+            <button type="submit" disabled={!originaURL}>
+              {applied ? 'Re-apply' : 'Apply'} badge
+            </button>
+          </div>
+
+          <div className={styles['photo-upload-form-result-img-container']}>
+            <p>Result</p>
 
             {isLoading && <Spinner ariaValueText="Loading result" />}
 
-            {objectURL && <Canvas layers={imgLayers} />}
-          </fieldset>
+            {objectURL ? (
+              <Canvas layers={imgLayers} />
+            ) : (
+              <div className={styles['photo-upload-form-result__empty']}>Upload photo</div>
+            )}
+          </div>
         </div>
       </form>
     </div>

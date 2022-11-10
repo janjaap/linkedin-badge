@@ -2,6 +2,10 @@
   display: block;
 }
 
+.photo-upload-parse-error {
+  color: #ec0000;
+}
+
 .photo-upload-form {
   border: 1px solid #241f31;
   display: flex;
@@ -39,7 +43,7 @@
   grid-auto-rows: 1fr;
 }
 
-.photo-upload-form-result fieldset {
+.photo-upload-form-result-img-container {
   height: 100%;
   max-height: 28rem;
   margin-top: 2rem;
@@ -48,11 +52,11 @@
 
 .photo-upload-form-result__empty {
   align-items: center;
-  color: #ccc;
-  justify-content: center;
+  aspect-ratio: 1 / 1;
   border: 2px dashed #ccc;
+  color: #ccc;
   display: flex;
-  min-height: 20rem;
+  justify-content: center;
   padding: 2rem;
 }
 
