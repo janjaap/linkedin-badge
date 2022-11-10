@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import NextImage from 'next/image';
 import classNames from 'clsx';
-import ReactCrop from 'react-image-crop';
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 
 import 'react-image-crop/dist/ReactCrop.css';
 import type { ChangeEvent, FormEvent } from 'react';
@@ -79,8 +79,8 @@ export function PhotoUpload() {
         return;
       }
 
-      let cropWidth = 75;
-      let cropHeight = 75;
+      let cropWidth = 50;
+      let cropHeight = 50;
 
       if (ratio <= 1) {
         cropHeight = cropHeight * ratio;
@@ -90,13 +90,23 @@ export function PhotoUpload() {
 
       setOriginalURL(URL.createObjectURL(file));
       setSize({ width, height });
-      setCrop({
-        ...initialCrop,
-        width: Math.round(cropWidth),
-        height: Math.round(cropHeight),
-        x: (100 - cropWidth) / 2,
-        y: (100 - cropHeight) / 2,
-      });
+
+      const relCrop = centerCrop(
+        makeAspectCrop(
+          {
+            unit: '%',
+            width: Math.round(cropWidth),
+            height: Math.round(cropHeight),
+          },
+          1,
+          width,
+          height
+        ),
+        width,
+        height
+      );
+      setCrop(relCrop);
+      setPercentCrop(relCrop);
     };
   }
 
@@ -260,7 +270,7 @@ export function PhotoUpload() {
           </div>
 
           <div className={styles['photo-upload-form-input']}>
-            <button type="submit" disabled={!originaURL}>
+            <button type="submit" disabled={!originaURL || isLoading}>
               {applied ? 'Re-apply' : 'Apply'} badge
             </button>
           </div>
