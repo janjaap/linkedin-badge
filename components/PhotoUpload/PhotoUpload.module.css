@@ -103,3 +103,22 @@
 .photo-upload-form__input-prefix + input[type="text"] {
   padding-left: 1.5rem;
 }
+
+@media only screen and (max-width: 900px) {
+  .photo-upload-form-result {
+    gap: 2rem;
+  }
+}
+
+@media only screen and (max-width: 750px) {
+  .photo-upload-form-result {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .photo-upload-form-result-img-container {
+    margin: 0;
+    width: 100%;
+    max-width: 25rem;
+  }
+}
