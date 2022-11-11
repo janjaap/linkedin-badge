@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import NextImage from 'next/image';
 import classNames from 'clsx';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 
@@ -200,10 +199,11 @@ export function PhotoUpload() {
           </div>
 
           <input
-            id="photo"
-            type="file"
-            onChange={onChangeFile}
+            accept="image/*"
             aria-describedby={fileError ? 'ID_FILE_ERROR' : undefined}
+            id="photo"
+            onChange={onChangeFile}
+            type="file"
           />
         </fieldset>
 
