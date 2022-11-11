@@ -4,7 +4,6 @@ import type { File } from 'formidable';
 import sharp from 'sharp';
 import formidable from 'formidable';
 import fs from 'fs';
-// import path from 'path';
 import type { Crop, PercentCrop } from 'react-image-crop';
 
 const IMAGE_DIMENSION = 400;

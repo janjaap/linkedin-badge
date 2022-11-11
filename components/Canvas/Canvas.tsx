@@ -2,6 +2,8 @@ import { HTMLAttributes, useEffect, useRef, useState } from 'react';
 import { fileSize } from './fileSize';
 import { getImage } from './getImage';
 
+import styles from './Canvas.module.css';
+
 interface Props extends HTMLAttributes<HTMLCanvasElement> {
   layers: string[];
 }
@@ -58,7 +60,7 @@ export function Canvas({ layers, ...restProps }: Props) {
 
   return (
     <div>
-      <canvas width="400" height="400" ref={canvasRef} {...restProps} />
+      <canvas className={styles.canvas} width="400" height="400" ref={canvasRef} {...restProps} />
       {objectUrl && (
         <div>
           <a href={objectUrl} download="linkedin_profile-badge.png">

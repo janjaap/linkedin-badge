@@ -170,8 +170,6 @@ export function PhotoUpload() {
 
   return (
     <div className={styles['photo-upload']}>
-      <h1>Linkedin profile badge generator</h1>
-
       <p>Render an image with rounded corners below a #FREELANCE badge on a transparent background.</p>
       <p>
         The Linkedin profile badge needs to be square. The image that you want to convert can be cropped once selected.
