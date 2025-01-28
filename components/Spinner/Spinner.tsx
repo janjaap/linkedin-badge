@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import NextImage from 'next/image';
+import { useEffect, useState } from 'react';
 
 import loading from './loading.svg';
 
@@ -24,6 +24,6 @@ export const Spinner = ({ ariaValueText, visibleAfter = DEFAULT_DELAY }: Props) 
   });
 
   return visible ? (
-    <NextImage role="progressbar" aria-valuetext={ariaValueText} src={loading.src} width={200} height={200} />
+    <NextImage role="progressbar" aria-valuetext={ariaValueText} src={loading.src} width={200} height={200} alt="" />
   ) : null;
 };
