@@ -1,7 +1,7 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { File } from 'formidable';
-import sharp from 'sharp';
+import sharp, { type Metadata } from 'sharp';
 import formidable from 'formidable';
 import fs from 'fs';
 import type { Crop, PercentCrop } from 'react-image-crop';
@@ -9,7 +9,7 @@ import type { Crop, PercentCrop } from 'react-image-crop';
 const IMAGE_DIMENSION = 400;
 const CROP: PercentCrop = { x: 0, y: 0, width: 100, height: 100, unit: '%' };
 
-const cropCfg = (crop: Crop, size: number, metaData: sharp.Metadata) => {
+const cropCfg = (crop: Crop, size: number, metaData: Metadata) => {
   const left = Number.parseInt((((crop.x || CROP.x) / 100) * (metaData.width || size)).toFixed(), 10);
   const top = Number.parseInt((((crop.y || CROP.y) / 100) * (metaData.height || size)).toFixed(), 10);
   const width = Number.parseInt(((crop.width / 100) * (metaData.width || size)).toFixed(), 10);
