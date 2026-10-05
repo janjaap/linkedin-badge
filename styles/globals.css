@@ -1,4 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600&display=swap");
+/* Self-hosted (OFL-1.1, see public/fonts) so the badge canvas never depends on a third-party font request */
+@font-face {
+  font-family: "Libre Franklin";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/libre-franklin-latin-600.woff2") format("woff2");
+}
 
 :root {
   --body-padding: calc(1vmin + 0.5rem);

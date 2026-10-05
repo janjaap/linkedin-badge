@@ -16,6 +16,7 @@ import {
   DEFAULT_TAGLINE,
   TAGLINE_MAX_LENGTH,
 } from '../../lib/badge';
+import { contrastRatio, MIN_TAGLINE_CONTRAST } from '../../lib/contrast';
 
 const MIN_IMG_WIDTH = 400;
 const initialCrop: PercentCrop = {
@@ -40,6 +41,7 @@ export function PhotoUpload() {
   const [tagLineError, setTagLineError] = useState('');
   const [fgColour, setFgColour] = useState(DEFAULT_FG_COLOUR);
   const [bgColour, setBgColour] = useState(DEFAULT_BG_COLOUR);
+  const contrast = contrastRatio(fgColour, bgColour);
   // Settings the current result was rendered with; only updated on (re-)apply so the result matches what was submitted
   const [appliedText, setAppliedText] = useState({ tagLine: DEFAULT_TAGLINE, fgColour: DEFAULT_FG_COLOUR });
 
@@ -263,6 +265,13 @@ export function PhotoUpload() {
               Background
             </label>
           </div>
+
+          {contrast < MIN_TAGLINE_CONTRAST && (
+            <p id="ID_CONTRAST_WARNING" className={styles['photo-upload-form__input-warning']} role="status">
+              Low contrast ({contrast.toFixed(1)}:1). The tagline may be hard to read, especially at the small size
+              LinkedIn shows profile photos; aim for at least {MIN_TAGLINE_CONTRAST}:1.
+            </p>
+          )}
         </fieldset>
 
         {parseError && <div className={styles['photo-upload-parse-error']}>{parseError}</div>}

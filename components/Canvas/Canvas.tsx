@@ -18,6 +18,7 @@ export function Canvas({ layers, tagLine, fgColour, ...restProps }: Props) {
 
   const [size, setSize] = useState('');
   const [objectUrl, setObjectURL] = useState('');
+  const [fontError, setFontError] = useState(false);
 
   useEffect(() => {
     if (!objectUrl) return;
@@ -35,13 +36,19 @@ export function Canvas({ layers, tagLine, fgColour, ...restProps }: Props) {
     let cancelled = false;
 
     const drawImageLayers = async () => {
-      // Libre Franklin is registered via the Google Fonts @import in globals.css; this makes sure it's loaded
-      // before measuring/drawing, otherwise the canvas silently falls back to the default font.
-      await document.fonts.load(`${TAGLINE_FONT_WEIGHT} 32px "${TAGLINE_FONT}"`);
+      // Libre Franklin is self-hosted via @font-face in globals.css. Canvas text doesn't trigger font loading,
+      // so load it explicitly; if that fails the browser would silently draw in a fallback font.
+      const fontSpec = `${TAGLINE_FONT_WEIGHT} 32px "${TAGLINE_FONT}"`;
+      const fontLoaded = await document.fonts
+        .load(fontSpec)
+        .then((faces) => faces.length > 0)
+        .catch(() => false);
 
       const imagesFromLayers = await Promise.all(layers.map((src) => getImage(src)));
 
       if (cancelled) return;
+
+      setFontError(!fontLoaded);
 
       context2D.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
@@ -77,6 +84,11 @@ export function Canvas({ layers, tagLine, fgColour, ...restProps }: Props) {
         ref={canvasRef}
         {...restProps}
       />
+      {fontError && (
+        <p role="alert">
+          <small>The badge font could not be loaded, so the tagline uses a fallback font. Reload the page to retry.</small>
+        </p>
+      )}
       {objectUrl && (
         <div>
           <a href={objectUrl} download="linkedin_profile-badge.png">
