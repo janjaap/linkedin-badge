@@ -8,12 +8,16 @@ import type { Crop, PercentCrop, PixelCrop } from 'react-image-crop';
 
 import styles from './PhotoUpload.module.css';
 import { Canvas } from '../Canvas/Canvas';
-// import { textOnCurve } from './textOnCurve';
 import { Spinner } from '../Spinner/Spinner';
 import { fileSize } from '../Canvas/fileSize';
+import {
+  DEFAULT_BG_COLOUR,
+  DEFAULT_FG_COLOUR,
+  DEFAULT_TAGLINE,
+  TAGLINE_MAX_LENGTH,
+} from '../../lib/badge';
 
 const MIN_IMG_WIDTH = 400;
-const defaultTagLine = 'FREELANCE';
 const initialCrop: PercentCrop = {
   unit: '%',
   width: 75,
@@ -32,8 +36,12 @@ export function PhotoUpload() {
   const [objectURL, setObjectURL] = useState<string>();
   const [originaURL, setOriginalURL] = useState<string>();
   const [parseError, setParseError] = useState('');
-  const [tagLine, setTagLine] = useState<string>(defaultTagLine);
+  const [tagLine, setTagLine] = useState<string>(DEFAULT_TAGLINE);
   const [tagLineError, setTagLineError] = useState('');
+  const [fgColour, setFgColour] = useState(DEFAULT_FG_COLOUR);
+  const [bgColour, setBgColour] = useState(DEFAULT_BG_COLOUR);
+  // Settings the current result was rendered with; only updated on (re-)apply so the result matches what was submitted
+  const [appliedText, setAppliedText] = useState({ tagLine: DEFAULT_TAGLINE, fgColour: DEFAULT_FG_COLOUR });
 
   const [size, setSize] = useState<{ width: number; height: number }>();
 
@@ -112,11 +120,13 @@ export function PhotoUpload() {
 
     setTagLineError('');
 
-    if (!validity.valid) {
+    if (validity.valueMissing) {
+      setTagLineError('Fill in a tagline.');
+    } else if (!validity.valid) {
       setTagLineError('Only use alphanumeric characters (A-Z, 0-9) for your hashtag.');
     }
 
-    setTagLine(value);
+    setTagLine(value.toUpperCase());
   }
 
   function onSubmit(event: FormEvent) {
@@ -132,6 +142,9 @@ export function PhotoUpload() {
     const formData = new FormData();
     formData.append('photo', file);
     formData.append('crop', JSON.stringify(crop));
+    formData.append('bgColour', bgColour);
+
+    const submittedText = { tagLine, fgColour };
 
     setIsLoading(true);
     setObjectURL(undefined);
@@ -155,6 +168,7 @@ export function PhotoUpload() {
         setObjectURL(resultSrc);
         setIsLoading(false);
         setImgLayers([resultSrc]);
+        setAppliedText(submittedText);
         setApplied(true);
       })
       .catch((error: Error) => {
@@ -169,15 +183,9 @@ export function PhotoUpload() {
 
   return (
     <div className={styles['photo-upload']}>
-      <p>Render an image with rounded corners below a #FREELANCE badge on a transparent background.</p>
+      <p>Render an image with rounded corners below a hashtag badge on a transparent background.</p>
       <p>
         The Linkedin profile badge needs to be square. The image that you want to convert can be cropped once selected.
-      </p>
-      <p>
-        <em>
-          Note: this is the first version in which you cannot set your own tagline nor the colour of the tagline
-          background.
-        </em>
       </p>
 
       <form action="" className={styles['photo-upload-form']} onSubmit={onSubmit} noValidate>
@@ -210,7 +218,6 @@ export function PhotoUpload() {
         <fieldset
           className={classNames(styles['photo-upload-form__fieldset'], {
             [styles['photo-upload-form__fieldset--error']]: tagLineError,
-            [styles['photo-upload-form__fieldset--disabled']]: true,
           })}
         >
           <div className={styles['photo-upload-form-label']}>
@@ -230,13 +237,31 @@ export function PhotoUpload() {
           <div className={styles['photo-upload-form-input']}>
             <span className={styles['photo-upload-form__input-prefix']}>#</span>
             <input
-              disabled
+              aria-describedby={tagLineError ? 'ID_TAGLINE_ERROR' : undefined}
+              aria-invalid={Boolean(tagLineError)}
               id="tagline"
+              maxLength={TAGLINE_MAX_LENGTH}
               onChange={onChangeTagLine}
               pattern="[A-Za-z0-9]+"
+              required
               type="text"
               value={tagLine}
             />
+          </div>
+        </fieldset>
+
+        <fieldset className={styles['photo-upload-form__fieldset']}>
+          <legend className={styles['photo-upload-form-label']}>Badge colours</legend>
+
+          <div className={styles['photo-upload-form-colours']}>
+            <label>
+              <input type="color" value={fgColour} onChange={(event) => setFgColour(event.target.value)} /> Text
+            </label>
+
+            <label>
+              <input type="color" value={bgColour} onChange={(event) => setBgColour(event.target.value)} />{' '}
+              Background
+            </label>
           </div>
         </fieldset>
 
@@ -280,7 +305,7 @@ export function PhotoUpload() {
             )}
 
             {objectURL ? (
-              <Canvas layers={imgLayers} />
+              <Canvas layers={imgLayers} tagLine={appliedText.tagLine} fgColour={appliedText.fgColour} />
             ) : (
               <div className={styles['photo-upload-form-result__empty']}>Upload photo</div>
             )}
