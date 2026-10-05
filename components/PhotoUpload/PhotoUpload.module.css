@@ -129,3 +129,9 @@
   display: inline-flex;
   gap: 0.5rem;
 }
+
+.photo-upload-form__input-warning {
+  color: #8a5300;
+  font-size: 0.885rem;
+  margin: 0.5rem 0 0;
+}
