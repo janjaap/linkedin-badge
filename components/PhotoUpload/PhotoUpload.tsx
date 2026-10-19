@@ -7,14 +7,18 @@ import type { ChangeEvent, FormEvent } from 'react';
 import type { Crop, PercentCrop, PixelCrop } from 'react-image-crop';
 
 import styles from './PhotoUpload.module.css';
-import { Canvas } from '../Canvas/Canvas';
+import { Canvas, CANVAS_SIZE } from '../Canvas/Canvas';
 import { Spinner } from '../Spinner/Spinner';
 import { fileSize } from '../Canvas/fileSize';
+import { TAGLINE_FONT, TAGLINE_FONT_WEIGHT, taglineSweep } from '../Canvas/drawTagline';
 import {
   DEFAULT_BG_COLOUR,
   DEFAULT_FG_COLOUR,
   DEFAULT_TAGLINE,
+  DEFAULT_TAGLINE_ANGLE,
+  TAGLINE_ANGLE_LIMIT,
   TAGLINE_MAX_LENGTH,
+  TAGLINE_MAX_SWEEP,
 } from '../../lib/badge';
 import { contrastRatio, MIN_TAGLINE_CONTRAST } from '../../lib/contrast';
 
@@ -27,6 +31,18 @@ const initialCrop: PercentCrop = {
   y: 12.5,
 };
 
+/** Measures how far the tagline sweeps around the arc so the banner can scale to fit it. */
+async function measureTaglineSweep(tagLine: string) {
+  // Canvas text doesn't trigger font loading; if it fails the fallback font is measured instead
+  await document.fonts.load(`${TAGLINE_FONT_WEIGHT} 32px "${TAGLINE_FONT}"`).catch(() => undefined);
+
+  const context = document.createElement('canvas').getContext('2d');
+
+  if (!context) return undefined;
+
+  return taglineSweep(context, `#${tagLine}`, CANVAS_SIZE);
+}
+
 export function PhotoUpload() {
   const [applied, setApplied] = useState(false);
   const [crop, setCrop] = useState<Crop>(initialCrop);
@@ -38,12 +54,17 @@ export function PhotoUpload() {
   const [originaURL, setOriginalURL] = useState<string>();
   const [parseError, setParseError] = useState('');
   const [tagLine, setTagLine] = useState<string>(DEFAULT_TAGLINE);
+  const [tagLineAngle, setTagLineAngle] = useState(DEFAULT_TAGLINE_ANGLE);
   const [tagLineError, setTagLineError] = useState('');
   const [fgColour, setFgColour] = useState(DEFAULT_FG_COLOUR);
   const [bgColour, setBgColour] = useState(DEFAULT_BG_COLOUR);
   const contrast = contrastRatio(fgColour, bgColour);
   // Settings the current result was rendered with; only updated on (re-)apply so the result matches what was submitted
-  const [appliedText, setAppliedText] = useState({ tagLine: DEFAULT_TAGLINE, fgColour: DEFAULT_FG_COLOUR });
+  const [appliedText, setAppliedText] = useState({
+    tagLine: DEFAULT_TAGLINE,
+    tagLineAngle: DEFAULT_TAGLINE_ANGLE,
+    fgColour: DEFAULT_FG_COLOUR,
+  });
 
   const [size, setSize] = useState<{ width: number; height: number }>();
 
@@ -131,7 +152,7 @@ export function PhotoUpload() {
     setTagLine(value.toUpperCase());
   }
 
-  function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent) {
     event.preventDefault();
 
     if (!file || fileError || tagLineError) return;
@@ -141,16 +162,25 @@ export function PhotoUpload() {
       return;
     }
 
+    setIsLoading(true);
+    setObjectURL(undefined);
+    setParseError('');
+
+    // Font loading can take a moment, so start loading first to block a second submit
+    const sweep = await measureTaglineSweep(tagLine).catch(() => undefined);
+
     const formData = new FormData();
     formData.append('photo', file);
     formData.append('crop', JSON.stringify(crop));
     formData.append('bgColour', bgColour);
+    formData.append('tagLineAngle', String(tagLineAngle));
 
-    const submittedText = { tagLine, fgColour };
+    if (sweep) {
+      const sweepDegrees = Math.min((sweep * 180) / Math.PI, TAGLINE_MAX_SWEEP);
+      formData.append('tagLineSweep', String(sweepDegrees));
+    }
 
-    setIsLoading(true);
-    setObjectURL(undefined);
-    setParseError('');
+    const submittedText = { tagLine, tagLineAngle, fgColour };
 
     fetch('/api/photo', { method: 'POST', body: formData })
       .then(async (response) => {
@@ -253,6 +283,30 @@ export function PhotoUpload() {
         </fieldset>
 
         <fieldset className={styles['photo-upload-form__fieldset']}>
+          <legend className={styles['photo-upload-form-label']}>Banner angle</legend>
+
+          <p className={styles['photo-upload-form__input-info']}>
+            Rotate the banner and tagline left or right by up to {TAGLINE_ANGLE_LIMIT} degrees; the tagline flips to
+            stay readable when upside down
+          </p>
+
+          <div className={styles['photo-upload-form-range']}>
+            <input
+              aria-label="Banner angle"
+              id="tagline-angle"
+              max={TAGLINE_ANGLE_LIMIT}
+              min={-TAGLINE_ANGLE_LIMIT}
+              onChange={(event) => setTagLineAngle(Number(event.target.value))}
+              step={1}
+              type="range"
+              value={tagLineAngle}
+            />
+
+            <output htmlFor="tagline-angle">{tagLineAngle}°</output>
+          </div>
+        </fieldset>
+
+        <fieldset className={styles['photo-upload-form__fieldset']}>
           <legend className={styles['photo-upload-form-label']}>Badge colours</legend>
 
           <div className={styles['photo-upload-form-colours']}>
@@ -314,7 +368,12 @@ export function PhotoUpload() {
             )}
 
             {objectURL ? (
-              <Canvas layers={imgLayers} tagLine={appliedText.tagLine} fgColour={appliedText.fgColour} />
+              <Canvas
+                layers={imgLayers}
+                tagLine={appliedText.tagLine}
+                tagLineAngle={appliedText.tagLineAngle}
+                fgColour={appliedText.fgColour}
+              />
             ) : (
               <div className={styles['photo-upload-form-result__empty']}>Upload photo</div>
             )}

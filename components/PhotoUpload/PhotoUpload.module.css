@@ -130,6 +130,23 @@
   gap: 0.5rem;
 }
 
+.photo-upload-form-range {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}
+
+.photo-upload-form-range input[type="range"] {
+  flex: 1;
+  max-width: 20rem;
+}
+
+.photo-upload-form-range output {
+  color: #767676;
+  font-size: 0.885rem;
+  min-width: 3ch;
+}
+
 .photo-upload-form__input-warning {
   color: #8a5300;
   font-size: 0.885rem;

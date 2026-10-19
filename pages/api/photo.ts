@@ -5,10 +5,27 @@ import sharp, { type Metadata } from 'sharp';
 import formidable from 'formidable';
 import fs from 'fs';
 import type { Crop, PercentCrop } from 'react-image-crop';
-import { DEFAULT_BG_COLOUR, HEX_COLOUR } from '../../lib/badge';
+import {
+  BADGE_CENTRE,
+  BADGE_RADIUS,
+  BADGE_VIEWBOX,
+  DEFAULT_BG_COLOUR,
+  HEX_COLOUR,
+  TAGLINE_ANGLE_LIMIT,
+  TAGLINE_INNER_RADIUS,
+  TAGLINE_MAX_SWEEP,
+  TAGLINE_START_ANGLE,
+} from '../../lib/badge';
 
 const IMAGE_DIMENSION = 400;
 const CROP: PercentCrop = { x: 0, y: 0, width: 100, height: 100, unit: '%' };
+
+const DEFAULT_TAGLINE_SWEEP = 110; // fallback for when the client doesn't send a measured sweep
+const TAGLINE_PAD_MIN = 12; // degrees of banner either side of the tagline
+const TAGLINE_PAD_MAX = 42;
+const TAGLINE_PAD_RATIO = 0.35;
+const MAX_BAND_SWEEP = 180;
+const BANNER_FEATHER = 0.75; // pixels
 
 const cropCfg = (crop: Crop, size: number, metaData: Metadata) => {
   const left = Number.parseInt((((crop.x || CROP.x) / 100) * (metaData.width || size)).toFixed(), 10);
@@ -28,35 +45,84 @@ const roundedCorners = (size = IMAGE_DIMENSION) =>
   Buffer.from(`<svg><rect x="0" y="0" width="${size}" height="${size}" rx="${size / 2}" ry="${size / 2}" /></svg>`);
 
 
-const gradientStops: Array<[offset: number, opacity: number]> = [
-  [0.09, 0],
-  [0.13, 0.04],
-  [0.2, 0.14],
-  [0.27, 0.3],
-  [0.29, 0.35],
-  [0.42, 0.67],
-  [0.53, 0.91],
-  [0.58, 1],
+const smoothstep = (value: number) => {
+  const t = Math.max(0, Math.min(1, value));
+
+  return t * t * (3 - 2 * t);
+};
+
+const hexToRgb = (hex: string): [number, number, number] => [
+  Number.parseInt(hex.slice(1, 3), 16),
+  Number.parseInt(hex.slice(3, 5), 16),
+  Number.parseInt(hex.slice(5, 7), 16),
 ];
 
-// Background band only; the tagline itself is drawn client-side (librsvg has no textPath / @font-face support)
-const arc = (size = IMAGE_DIMENSION, colour = DEFAULT_BG_COLOUR) =>
-  Buffer.from(`
-    <svg width="${size}" height="${size}" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M98.86 229C54.66 291.61 24.29 362.91 9.76998 438.16C-4.75002 513.41 -3.08002 590.89 14.67 665.45C32.41 740.01 65.82 809.93 112.68 870.58C159.53 931.23 218.76 981.21 286.42 1017.2C354.08 1053.19 428.63 1074.36 505.11 1079.31C581.59 1084.26 658.24 1072.88 729.98 1045.92C801.72 1018.95 866.9 977.03 921.18 922.93C975.46 868.83 1017.61 803.8 1044.82 732.15L883.38 670.84C864.87 719.57 836.21 763.81 799.28 800.61C762.36 837.41 718.02 865.92 669.22 884.26C620.42 902.6 568.28 910.34 516.26 906.97C464.24 903.6 413.53 889.2 367.51 864.72C321.49 840.24 281.2 806.24 249.33 764.99C217.46 723.74 194.74 676.17 182.67 625.46C170.6 574.75 169.47 522.05 179.34 470.86C189.21 419.67 209.87 371.18 239.93 328.59L98.86 229Z" fill="url(#bg)" />
-      <defs>
-        <linearGradient id="bg" x1="568.3" y1="494.14" x2="241.8" y2="1028.18" gradientUnits="userSpaceOnUse">
-          ${gradientStops
-            .map(([offset, opacity]) => `<stop offset="${offset}" stop-color="${colour}" stop-opacity="${opacity}" />`)
-            .join('')}
-        </linearGradient>
-      </defs>
-    </svg>
-`);
+// Background band only; the tagline itself is drawn client-side (librsvg has no textPath / @font-face support).
+// The band is rasterised so its opacity can fade with the angle, which an SVG gradient can't follow along an
+// arc; the band's sweep follows the measured tagline length, so it scales to fit the text.
+const banner = async (
+  size: number,
+  colour: string,
+  angle: number,
+  textSweep: number = DEFAULT_TAGLINE_SWEEP
+) => {
+  const pad = Math.min(
+    TAGLINE_PAD_MAX,
+    Math.max(TAGLINE_PAD_MIN, textSweep * TAGLINE_PAD_RATIO),
+    (MAX_BAND_SWEEP - textSweep) / 2
+  );
+  const bandSweep = ((textSweep + 2 * pad) * Math.PI) / 180;
+  const padRadians = (pad * Math.PI) / 180;
+  const startAngle = ((TAGLINE_START_ANGLE + pad - angle) * Math.PI) / 180;
+  const scale = size / BADGE_VIEWBOX;
+  const innerRadius = TAGLINE_INNER_RADIUS * scale;
+  const outerRadius = BADGE_RADIUS * scale;
+  const centre = BADGE_CENTRE * scale;
+  const [red, green, blue] = hexToRgb(colour);
+  const data = Buffer.alloc(size * size * 4);
+  const twoPi = Math.PI * 2;
+  const wrap = (value: number) => ((value % twoPi) + twoPi) % twoPi;
+
+  for (let y = 0; y < size; y += 1) {
+    const dy = y + 0.5 - centre;
+
+    for (let x = 0; x < size; x += 1) {
+      const dx = x + 0.5 - centre;
+      const radius = Math.hypot(dx, dy);
+      const radial =
+        smoothstep((radius - (innerRadius - BANNER_FEATHER)) / (2 * BANNER_FEATHER)) *
+        (1 - smoothstep((radius - (outerRadius - BANNER_FEATHER)) / (2 * BANNER_FEATHER)));
+
+      if (radial <= 0) continue;
+
+      const offset = wrap(startAngle - Math.atan2(dy, dx));
+
+      if (offset > bandSweep) continue;
+
+      // Distance from the nearest end of the band, so the fade stays outside the tagline
+      const fromEnd = Math.min(offset, bandSweep - offset);
+      const alpha = smoothstep(fromEnd / padRadians) * radial;
+
+      if (alpha <= 0) continue;
+
+      const index = (y * size + x) * 4;
+      data[index] = red;
+      data[index + 1] = green;
+      data[index + 2] = blue;
+      data[index + 3] = Math.round(alpha * 255);
+    }
+  }
+
+  return sharp(data, { raw: { width: size, height: size, channels: 4 } })
+    .png()
+    .toBuffer();
+};
 
 type Fields = {
   tagLine?: string;
-  size?: number;
+  tagLineAngle?: string;
+  tagLineSweep?: string;
+  size?: string;
   crop?: string;
   bgColour?: string;
 };
@@ -107,22 +173,48 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const bgColour = fields.bgColour ?? DEFAULT_BG_COLOUR;
 
-    // Interpolated into SVG markup, so anything but a strict hex value is rejected
+    // Parsed into RGB, so anything but a strict hex value is rejected
     if (!HEX_COLOUR.test(bgColour)) {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
       res.end('bgColour should be a hex colour, e.g. #015FDB');
       return;
     }
 
-    const resultImageSize = fields.size || IMAGE_DIMENSION;
+    const tagLineAngle = Number(fields.tagLineAngle ?? 0);
+
+    // Rotates the banner, so anything but a number in range is rejected
+    if (!Number.isFinite(tagLineAngle) || Math.abs(tagLineAngle) > TAGLINE_ANGLE_LIMIT) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end(`tagLineAngle should be a number between -${TAGLINE_ANGLE_LIMIT} and ${TAGLINE_ANGLE_LIMIT}`);
+      return;
+    }
+
+    let tagLineSweep = DEFAULT_TAGLINE_SWEEP;
+
+    if (fields.tagLineSweep !== undefined) {
+      tagLineSweep = Number(fields.tagLineSweep);
+
+      // Used to size the banner, so anything but a number in range is rejected
+      if (!Number.isFinite(tagLineSweep) || tagLineSweep <= 0 || tagLineSweep > TAGLINE_MAX_SWEEP) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end(`tagLineSweep should be greater than 0 and at most ${TAGLINE_MAX_SWEEP}`);
+        return;
+      }
+    }
+
+    const requestedSize = Number(fields.size);
+    const resultImageSize = fields.size && Number.isFinite(requestedSize)
+      ? Math.min(2048, Math.max(64, Math.round(requestedSize)))
+      : IMAGE_DIMENSION;
     const crop = fields.crop ? (JSON.parse(fields.crop) as PercentCrop) : CROP;
+    const bannerImage = await banner(resultImageSize, bgColour, tagLineAngle, tagLineSweep);
 
     sharp(files.photo.filepath)
       .extract(cropCfg(crop, resultImageSize, metaData))
       .resize({ width: resultImageSize })
       .composite([
         {
-          input: arc(resultImageSize, bgColour),
+          input: bannerImage,
           top: 0,
           left: 0,
         },

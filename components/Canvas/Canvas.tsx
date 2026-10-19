@@ -5,15 +5,16 @@ import { drawTagline, TAGLINE_FONT, TAGLINE_FONT_WEIGHT } from './drawTagline';
 
 import styles from './Canvas.module.css';
 
-const CANVAS_SIZE = 400;
+export const CANVAS_SIZE = 400;
 
 interface Props extends HTMLAttributes<HTMLCanvasElement> {
   layers: string[];
   tagLine: string;
+  tagLineAngle: number;
   fgColour: string;
 }
 
-export function Canvas({ layers, tagLine, fgColour, ...restProps }: Props) {
+export function Canvas({ layers, tagLine, tagLineAngle, fgColour, ...restProps }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [size, setSize] = useState('');
@@ -58,7 +59,7 @@ export function Canvas({ layers, tagLine, fgColour, ...restProps }: Props) {
         context2D.drawImage(image, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
       });
 
-      drawTagline(context2D, `#${tagLine.toUpperCase()}`, fgColour, CANVAS_SIZE);
+      drawTagline(context2D, `#${tagLine.toUpperCase()}`, fgColour, CANVAS_SIZE, tagLineAngle);
 
       canvasRef.current?.toBlob((blob) => {
         if (!blob || cancelled) return;
@@ -73,7 +74,7 @@ export function Canvas({ layers, tagLine, fgColour, ...restProps }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [layers, tagLine, fgColour]);
+  }, [layers, tagLine, tagLineAngle, fgColour]);
 
   return (
     <div>
